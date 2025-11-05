@@ -29,7 +29,9 @@
     "paths": {
       "@base": ["app/packages/base"],
       "@base/*": ["app/packages/base/*"],
-      "@common/*": ["app/packages/common/*"],
+      "@list": ["app/packages/list"],
+      "@list/*": ["app/packages/list/*"],
+      "@common/*": ["app/packages/common/*"]
     }
   }
 }
