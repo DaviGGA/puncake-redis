@@ -1,5 +1,5 @@
-import type { StringValue } from "../common/types";
-import { db } from "../common/storage";
+import { db } from "@common/storage";
+import type { StringValue } from "./types";
 
 function set(key: string, value: string, expiryTime: number) {
   db.set(key, createStringValue(value, expiryTime))

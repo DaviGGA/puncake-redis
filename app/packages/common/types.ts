@@ -1,4 +1,5 @@
-export type StringValue = { value: string, expiryTime: number, type: "string"}
+import type { StringValue } from "@base/types"
+
 export type ListValue = {list: StringValue[], length: number, type: "list"}
 
 export type id = string
