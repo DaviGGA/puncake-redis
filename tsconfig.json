@@ -22,6 +22,14 @@
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    "noPropertyAccessFromIndexSignature": false,
+
+    // Path
+    "baseUrl": ".",
+    "paths": {
+      "@base": ["app/packages/base"],
+      "@base/*": ["app/packages/base/*"],
+      "@common/*": ["app/packages/common/*"],
+    }
   }
 }
