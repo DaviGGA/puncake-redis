@@ -31,7 +31,9 @@
       "@base/*": ["app/packages/base/*"],
       "@list": ["app/packages/list"],
       "@list/*": ["app/packages/list/*"],
-      "@common/*": ["app/packages/common/*"]
+      "@common/*": ["app/packages/common/*"],
+      "@data-structures/*": ["app/packages/common/data-structures/*"],
+      "@utils/*": ["app/packages/common/utils/*"]
     }
   }
 }
