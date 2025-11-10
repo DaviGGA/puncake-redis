@@ -10,17 +10,25 @@ export class QuickListNode<T> {
     }
 }
 
+const DEFAULT_SIZE = 64;
+
 export class QuickList<T> {
     private _head: QuickListNode<T> | null;
     private _tail: QuickListNode<T> | null;
     private _length: number;
     private size: number;
 
-    constructor(size: number = 16) {
+    constructor(size: number = DEFAULT_SIZE) {
         this._head = null;
         this._tail = null;
         this._length = 0;
         this.size = size;
+    }
+
+    static fromArray<T>(arr: T[], size: number = DEFAULT_SIZE): QuickList<T> {
+        const quickList = new this<T>(size);
+        arr.forEach(item => quickList.rightAdd(item));
+        return quickList;
     }
 
     leftAdd(value: T) {
