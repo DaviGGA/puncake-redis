@@ -1,64 +1,29 @@
 import { eventEmitter } from "app/packages/persistence/events";
-import ListMemoryStorage from "../access";
+import ListMemoryStorage, { asyncQueue } from "../access";
 import { array, nullArray } from "@common/Resp/data-types";
 
 type Blpop = {
-  key: string,
-  timeout: string,
-  socketId: number
-}
+  key: string;
+  timeout: string;
+};
 
 type Seconds = number;
 const toMiliseconds = (s: Seconds) => s * 1000;
 
 export const blpopListeners: Map<number, any> = new Map();
 
-export async function blpop({key, timeout, socketId}: Blpop): Promise<string> {
-  const parsedTimeout = toMiliseconds(parseFloat(timeout));
+export async function blpop({ key, timeout }: Blpop): Promise<string> {
+  const result = ListMemoryStorage.lpop(key, 1);
 
-  const lpopResult = ListMemoryStorage.lpop(key, 1);
+  if (result.length > 0) {
+    return getResult(key, result);
+  }
 
-  if (lpopResult.length > 0) 
-    return getResult(key, lpopResult);
+  const asyncResult = await asyncQueue.wait(key);
 
-  const resultPromise: Promise<string> = new Promise(resolve => {
-    function onElementAdded(addedKey: string) {
-      if (addedKey != key) return;
-
-      const lpopResult = ListMemoryStorage.lpop(key, 1);
-      if (lpopResult.length === 0) return;
-
-      blpopListeners.delete(socketId);
-      eventEmitter.off("ELEMENT_ADDED", wrappedFn);
-      
-      resolve(getResult(key, lpopResult));
-    }
-
-    const wrappedFn = (addedKey: string) => onElementAdded(addedKey);
-
-    blpopListeners.set(socketId, wrappedFn);
-
-    eventEmitter.on("ELEMENT_ADDED", wrappedFn);
-  });
-
-  const timeoutPromise: Promise<string> = new Promise(resolve => {
-    if (parsedTimeout === 0) return resolve("");
-
-    setTimeout(() => {
-      const listener = blpopListeners.get(socketId);
-      if(!listener) return;
-      blpopListeners.delete(socketId);
-      eventEmitter.off("ELEMENT_ADDED", listener); 
-      resolve(nullArray())
-    }, parsedTimeout)
-  })
-
-  return parsedTimeout === 0 ?
-    resultPromise : Promise.race([resultPromise, timeoutPromise])
-
+  return getResult(key, [asyncResult]);
 }
 
-function getResult (key:string, result: string[]) {
-  return array([key, result[0]])
+function getResult(key: string, result: string[]) {
+  return array([key, result[0]]);
 }
-

@@ -6,6 +6,6 @@ type Rpush = {
   value: string[],
 }
 
-export function rpush({ key, value }: Rpush) {
-  return integer(ListMemoryStorage.rpush(key, value));
+export  async function rpush({ key, value }: Rpush) {
+  return integer(await ListMemoryStorage.rpush(key, value));
 }

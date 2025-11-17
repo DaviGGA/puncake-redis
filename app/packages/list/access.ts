@@ -3,8 +3,11 @@ import { eventEmitter } from "../persistence/events";
 import type { StringValue } from "@base/types";
 import type { ListValue } from "@list/types";
 import { QuickList } from "@common/data-structures/quick-list";
+import { AsyncSignalQueue } from "@common/data-structures/async-signal-queue";
 
-function rpush(key: string, values: string[]) {
+export const asyncQueue = new AsyncSignalQueue();
+
+async function rpush(key: string, values: string[]) {
   const result = db.get(key) as ListValue | undefined;
 
   if (!result) {
@@ -14,22 +17,16 @@ function rpush(key: string, values: string[]) {
     });
 
     const valuesLength = values.length;
-
-    eventEmitter.emit("ELEMENT_ADDED", key);
-
+    await asyncQueue.signal(key);
     return valuesLength;
   }
 
-  values.forEach(value => 
-    result.list.rightAdd(
-      createStringValue(value)))
-  
+  values.forEach((value) => result.list.rightAdd(createStringValue(value)));
+
   db.set(key, result);
 
-  eventEmitter.emit("ELEMENT_ADDED", key);
-
   const resultLength = result.list.length;
-
+  await asyncQueue.signal(key);
   return resultLength;
 }
 
@@ -38,8 +35,7 @@ function lpush(key: string, values: string[]) {
 
   if (!result) {
     db.set(key, {
-      list: QuickList.fromArray(
-        values.reverse().map(createStringValue)),
+      list: QuickList.fromArray(values.reverse().map(createStringValue)),
       type: "list",
     });
 
@@ -50,9 +46,7 @@ function lpush(key: string, values: string[]) {
     return valuesLength;
   }
 
-  values.forEach((value) => 
-    result.list.leftAdd(
-      createStringValue(value)))
+  values.forEach((value) => result.list.leftAdd(createStringValue(value)));
 
   db.set(key, result);
 
@@ -66,9 +60,7 @@ function lpush(key: string, values: string[]) {
 function lrange(key: string, start: number, end: number) {
   const result = db.get(key) as ListValue | undefined;
   if (!result) return [];
-  return result.list
-    .slice(start, end)
-    .map(item => item.value);
+  return result.list.slice(start, end).map((item) => item.value);
 }
 
 function llen(key: string) {
@@ -84,6 +76,7 @@ function lpop(key: string, quantity: number) {
   if (quantity >= result.list.length) {
     const values = result.list.toArray();
     result.list = new QuickList<StringValue>();
+    return values.map((v) => v.value);
   }
 
   const shiftedValues: StringValue[] = [];

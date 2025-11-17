@@ -1,33 +1,35 @@
-type Resolver<T> = (value: T) => void;
+import ListMemoryStorage from "@list/access";
 
-export class AsyncSignalQueue<T> {
+type Resolver = (value: string) => void;
 
-    private values: T[]
-    private resolvers: Resolver<T>[]
+export class AsyncSignalQueue {
+  private resolvers: Map<string, Resolver[]>;
 
-    constructor() {
-        this.values = [];
-        this.resolvers = [];
+  constructor() {
+    this.resolvers = new Map();
+  }
+
+  wait(key: string): Promise<string> {
+    return new Promise((resolve) => {
+      const resolvers = this.resolvers.get(key);
+      if (!resolvers) {
+        this.resolvers.set(key, [resolve]);
+        return;
+      }
+      resolvers.unshift(resolve);
+      this.resolvers.set(key, resolvers);
+    });
+  }
+
+  async signal(key: string): Promise<void> {
+    const resolvers = this.resolvers.get(key);
+    if (!resolvers) return;
+
+    while (resolvers.length > 0) {
+      const resolve = resolvers.pop();
+      const value = ListMemoryStorage.lpop(key, 1)[0];
+      if (!value || !resolve) break;
+      resolve(value);
     }
-
-    wait(): Promise<T> {
-        return new Promise((resolve) => {
-            if (this.values.length > 0) {
-                const value = this.values.pop();
-                return resolve(value as T);
-            }
-
-            this.resolvers.unshift(resolve);
-        })
-    }
-
-    release(value: T): void {
-        if(this.resolvers.length > 0) {
-            const resolve = this.resolvers.pop() as Resolver<T>;
-            resolve(value);
-            return;
-        }
-
-        this.values.unshift(value);
-    }
+  }
 }
